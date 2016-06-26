@@ -13,13 +13,6 @@
 
 using byte = unsigned char;
 
-class BufferOverflow : public std::exception {
-public:
-    const char *what() const noexcept override {
-        return "Buffer overflow";
-    }
-};
-
 /*
  * A wrapper class for serialized data.
  */
@@ -56,7 +49,7 @@ public:
 
     template<typename T>
     std::vector<T> readArray(int elements_num) {
-        if (pos + elements_num * sizeof(T) > length) throw BufferOverflow();
+        if (pos + elements_num * sizeof(T) > length) throw std::runtime_error("Buffer overflow");
         std::vector<T> ret(elements_num);
         for (int i = 0; i < elements_num; ++i) {
             ByteData <T> bd(*this);
@@ -131,6 +124,10 @@ private:
     size_t length;
     size_t pos;
     bool sealed; //when true, the stream is read-only
+
+    /*when true, all primitives are construced from read bytes in reverse order
+     * [1 1 0 0] -> (swapped == 1) (int) 257
+     * true by default */
     bool swapped;
 
     /*
@@ -142,7 +139,7 @@ private:
         byte bytes[sizeof(T)];
 
         ByteData(DataStream &stream) {
-            if (stream.pos + sizeof(T) > stream.length) throw BufferOverflow();
+            if (stream.pos + sizeof(T) > stream.length) throw std::runtime_error("Buffer overflow");
             for (int i = 0; i < sizeof(T); ++i) {
                 bytes[stream.swapped ? (sizeof(T) - 1 - i) : i] = stream.buffer.get()->at(stream.pos + i);
             }
@@ -153,7 +150,7 @@ private:
         ByteData(DataStream &stream, U &&value) {
             if (stream.sealed) throw std::runtime_error("Trying to write bytes into a sealed stream.");
             this->value = value;
-            if (stream.pos + sizeof(U) > MAX_LENGTH) throw BufferOverflow();
+            if (stream.pos + sizeof(U) > MAX_LENGTH) throw std::runtime_error("Buffer overflow");
             for (int i = 0; i < sizeof(U); ++i) {
                 stream.buffer.get()->at(stream.pos + (stream.swapped ? (sizeof(U) - 1 - i) : i)) = bytes[i];
             }
