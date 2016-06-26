@@ -9,7 +9,7 @@
 
 class RoleListPacket : public Packet {
 public:
-    static const int ID = 2;
+    static const int ID = 82;
 
     RoleListPacket(DataStream &stream,
                    ConnectionData &connectionData,
