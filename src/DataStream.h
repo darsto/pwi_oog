@@ -84,7 +84,7 @@ public:
                 write(static_cast<base_type<T>>(t));
             }
         } else {
-            throw std::runtime_error("Trying to write array of length >= 128.");
+            throw std::runtime_error("Trying to write array of length >= 256.");
         }
     }
 
