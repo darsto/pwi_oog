@@ -51,7 +51,7 @@ public:
     friend class PacketManager;
 
 protected:
-    DataStream stream;
+    DataStream &stream;
     ConnectionData &connectionData;
     handler_type data_handler = nullptr;
 };
