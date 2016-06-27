@@ -24,6 +24,7 @@
 #include <packet/server/SMKeyPacket.h>
 #include <packet/server/OnlineAnnouncePacket.h>
 #include <packet/server/LastLoginInfoPacket.h>
+#include <packet/server/PingPacket.h>
 
 class ConnectionManager {
 public:
