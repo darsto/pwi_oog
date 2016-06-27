@@ -97,6 +97,10 @@ public:
         return length;
     }
 
+    size_t getPos() const {
+        return pos;
+    }
+
     const std::shared_ptr<std::array<byte, 1024>> getBuffer() const {
         return buffer;
     }
