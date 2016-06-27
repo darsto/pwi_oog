@@ -23,6 +23,7 @@
 #include <packet/server/ServerInfoPacket.h>
 #include <packet/server/SMKeyPacket.h>
 #include <packet/server/OnlineAnnouncePacket.h>
+#include <packet/server/LastLoginInfoPacket.h>
 
 class ConnectionManager {
 public:
