@@ -20,7 +20,7 @@ void PacketManager::registerHandler(ServerPacketBaseFactory *factory,  Packet::h
 
 ServerPacketBaseFactory *PacketManager::getFactory(PacketType type, int id) {
     auto position = getPosition(type, id);
-    if (position >= factories.size()) throw std::out_of_range("Trying to get a factory of unknown packet");
+    if (position >= factories.size() || !factories[position]) throw std::out_of_range("Trying to get a factory of unknown packet");
     return factories[position];
 }
 
