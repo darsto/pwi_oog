@@ -43,7 +43,7 @@ private:
         return (unsigned long) type | id;
     }
 
-    PacketManager() {};
+    PacketManager() : factories() {};
 
 };
 
