@@ -50,23 +50,23 @@ public:
 
     void listen() {
         ssize_t bytes_recieved = recv(sock, receiveBuffer.get(), MAX_BYTES, 0);
-        int b2 = bytes_recieved;
         connectionData.cipher.decrypt(receiveBuffer.get()->data(), bytes_recieved);
         if (bytes_recieved > 0) {
-            printf("Received data [%d] = ", bytes_recieved - 2);
+            printf("Received data [%d] = ", (int) bytes_recieved - 2);
             for (int i = 0; i < bytes_recieved; ++i) {
                 printf("%d ", (int) ((unsigned char) (*receiveBuffer.get())[i]));
             }
             printf("\n");
+
             DataStream dataStream(receiveBuffer, bytes_recieved);
-            const int packetId = dataStream.read<byte>();
-            const int packetSize = dataStream.read<byte>();
+            int packetId = dataStream.read<byte>();
+            if (packetId & 128) packetId = dataStream.read<byte>();
+            int packetSize = dataStream.read<byte>();
             try {
                 auto p1 = PacketManager::getInstance().getFactory(PacketType::SERVER_DEFAULT, packetId)->createPacket(dataStream, this->connectionData);
                 if (p1->getStream().getLength() - 2 != packetSize) printf("Received packet [%d] contains unread data (%d)\n", packetId, packetSize - p1->getStream().getLength() + 2);
             } catch (const std::out_of_range &e) {
                 printf("%s\n", e.what());
-                exit(0);
             }
         }
     }
