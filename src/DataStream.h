@@ -195,10 +195,12 @@ private:
     /*
      * A wrapper class for primitives (de)serialization
      */
-    template<typename T, typename = std::enable_if_t<std::is_fundamental<base_type<T>>::value>>
+    template<typename T>
     union ByteData {
         base_type<T> value;
         byte bytes[sizeof(T)];
+
+        static_assert(std::is_fundamental<base_type<T>>::value, "Trying to create ByteData of non-fundamental type");
 
         ByteData(DataStream &stream) {
             if (stream.pos + sizeof(T) > stream.length) throw std::runtime_error("Buffer overflow");
