@@ -14,8 +14,8 @@ public:
         stream.read(accoundId);
         stream.read(unkId);
         stream.read(lastLoginTime);
-        lastLoginIP = stream.readArray<byte>(4);
-        currentIP = stream.readArray<byte>(4);
+        stream.read(lastLoginIP, 4);
+        stream.read(currentIP, 4);
     }
 
     unsigned int accoundId;

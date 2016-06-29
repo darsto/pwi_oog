@@ -13,12 +13,12 @@ public:
     virtual void prepareData() override {
         stream.read(accoundId);
         stream.read(unkId);
-        unknown1 = stream.readArray<byte>(21);
+        stream.skipBytes(21);
     }
 
     unsigned int accoundId;
     unsigned int unkId;
-    std::vector<byte> unknown1;
+    //[21 bytes]
 };
 
 #endif //PWI_OOG_ONLINEANNOUNCE_H

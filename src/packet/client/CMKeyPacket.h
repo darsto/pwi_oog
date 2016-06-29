@@ -17,7 +17,7 @@ public:
         : Packet(stream, connectionData), force(force) {}
 
     virtual void prepareData() override {
-        stream.writeArray(connectionData.CMKey);
+        stream.write(connectionData.CMKey);
         stream.write((byte) force);
     }
 

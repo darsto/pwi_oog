@@ -15,8 +15,8 @@ SERVER_PACKET(2, SMKeyPacket)
 
 public:
     virtual void prepareData() override {
-        SMKey = stream.readArray<byte>();
-        force = stream.read<byte>();
+        stream.read(SMKey);
+        stream.read(force);
     }
 
     std::vector<byte> SMKey;

@@ -29,10 +29,10 @@ public:
     }
 
     void prepareData() override {
-        stream.writeString(login);
-        stream.writeArray(connectionData.authHash);
+        stream.write(login);
+        stream.write(connectionData.authHash);
         stream.write(unknown1);
-        stream.writeArray(unknown2);
+        stream.write(unknown2);
     }
 
     std::string login;
