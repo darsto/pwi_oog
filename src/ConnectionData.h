@@ -6,6 +6,7 @@
 #define PWI_OOG_CONNECTIONDATA_H
 
 #include <vector>
+#include <pwi/RoleInfo.h>
 #include "DataStream.h"
 #include "Cipher.h"
 
@@ -19,6 +20,7 @@ struct ConnectionData {
     std::string crc;
     std::string login;
     unsigned int accountId = 0;
+    RoleInfo selectedRole;
 };
 
 #endif //PWI_OOG_CONNECTIONDATA_H

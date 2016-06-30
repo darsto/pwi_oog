@@ -26,6 +26,7 @@
 #include <packet/server/LastLoginInfoPacket.h>
 #include <packet/server/RoleListPacket.h>
 #include <packet/server/PingPacket.h>
+#include <packet/server/SelectRoleConfirmationPacket.h>
 
 class ConnectionManager {
 public:
