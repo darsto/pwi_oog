@@ -2,16 +2,16 @@
 // Created by dar on 6/25/16.
 //
 
-#ifndef PWI_OOG_ROLELIST_H
-#define PWI_OOG_ROLELIST_H
+#ifndef PWI_OOG_ROLELISTREQUEST_H
+#define PWI_OOG_ROLELISTREQUEST_H
 
 #include <packet/Packet.h>
 
-class RoleListPacket : public Packet {
+class RoleListRequestPacket : public Packet {
 public:
     static const int ID = 82;
 
-    RoleListPacket(DataStream &stream,
+    RoleListRequestPacket(DataStream &stream,
                    ConnectionData &connectionData,
                    int slot)
         : Packet(stream, connectionData), slot(slot) {}
@@ -25,4 +25,4 @@ public:
     int slot;
 };
 
-#endif //PWI_OOG_ROLELIST_H
+#endif //PWI_OOG_ROLELISTREQUEST_H
