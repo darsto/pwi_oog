@@ -188,11 +188,13 @@ public:
 
     void skipBytes(size_t n) {
         pos += n;
+        if (!sealed) length = pos;
     }
 
     void setPositionForward(size_t i) {
         if (i < pos) throw std::runtime_error("Trying to set invalid buffer position.");
         pos = i;
+        if (!sealed) length = pos;
     }
 
     static const int MAX_LENGTH = 1024;
