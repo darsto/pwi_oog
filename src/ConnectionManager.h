@@ -24,6 +24,7 @@
 #include <packet/server/SMKeyPacket.h>
 #include <packet/server/OnlineAnnouncePacket.h>
 #include <packet/server/LastLoginInfoPacket.h>
+#include <packet/server/RoleListPacket.h>
 #include <packet/server/PingPacket.h>
 
 class ConnectionManager {
@@ -50,22 +51,6 @@ public:
         return connected;
     }
 
-    // in data we receive, an integer may be 1 byte, 2 bytes, 4 bytes or 5 bytes (!)
-    unsigned int readShortestInt(DataStream &stream) {
-        byte firstByte = stream.getBuffer()->at(stream.getPos());
-        switch (firstByte & 128) {
-            case 0xE0:
-                stream.skipBytes(1);
-                return stream.read<int32_t>();
-            case 0xC0:
-                return stream.read<int32_t>() & 0x3FFFFFFF;
-            case 0x80:
-            case 0xA0:
-                return stream.read<int16_t>() & 0x7FFF;
-            default:
-                return stream.read<byte>();
-        }
-    }
 
     void listen() {
         ssize_t bytes_recieved = recv(sock, receiveBuffer.get(), MAX_BYTES, 0);
@@ -81,8 +66,10 @@ public:
             byte firstByte = receiveBuffer.get()->at(0);
 
             while (dataStream.getPos() < bytes_recieved) { //single stream may contain multiple packets
-                int packetId = readShortestInt(dataStream);
-                int packetSize = readShortestInt(dataStream);
+                int packetId;
+                dataStream.readShortestInt(packetId);
+                int packetSize;
+                dataStream.readShortestInt(packetSize);
                 printf("Handling packet [%d] [%d]\n", packetId, packetSize);
                 size_t previousPosition = dataStream.getPos();
                 try {
