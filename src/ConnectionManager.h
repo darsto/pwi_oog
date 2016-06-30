@@ -66,10 +66,8 @@ public:
             byte firstByte = receiveBuffer.get()->at(0);
 
             while (dataStream.getPos() < bytes_recieved) { //single stream may contain multiple packets
-                int packetId;
-                dataStream.readShortestInt(packetId);
-                int packetSize;
-                dataStream.readShortestInt(packetSize);
+                uni_int packetId = dataStream.read<uni_int>();
+                uni_int packetSize = dataStream.read<uni_int>();
                 printf("Handling packet [%d] [%d]\n", packetId, packetSize);
                 size_t previousPosition = dataStream.getPos();
                 try {
