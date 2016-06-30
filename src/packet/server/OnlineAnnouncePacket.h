@@ -11,12 +11,12 @@
 SERVER_PACKET(4, OnlineAnnouncePacket)
 public:
     virtual void prepareData() override {
-        stream.read(accoundId);
+        stream.read(accountId);
         stream.read(unkId);
         stream.skipBytes(21);
     }
 
-    unsigned int accoundId;
+    unsigned int accountId;
     unsigned int unkId;
     //[21 bytes]
 };
