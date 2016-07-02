@@ -112,7 +112,7 @@ public:
         if (vec_length == 0) read(vec_length);
         //this is just an optimization. If T is a non-fundamental type, sizeof(T) might contain extra padding bytes of T, which are not read from the stream
         int t_size = std::is_fundamental<std::decay_t<T>>::value ? sizeof(T) : 1;
-        if (this->pos + vec_length * t_size > this->length) throw std::runtime_error("Buffer overflow");
+        if (this->getPos() + vec_length * t_size > this->getLength()) throw std::runtime_error("Buffer overflow");
         vec.resize(vec_length);
         for (int i = 0; i < vec_length; ++i) {
             read(vec[i]);
@@ -151,7 +151,7 @@ public:
         //this is just an optimization. If T is a non-fundamental, sizeof(T) might contain extra padding bytes of T, which are not written into the stream
         int t_size = std::is_fundamental<std::decay_t<T>>::value ? sizeof(T) : 1;
         uni_int vec_length = {(int32_t) vec.size()};
-        if (this->pos + vec_length * t_size > MAX_LENGTH) throw std::runtime_error("Buffer overflow");
+        if (this->getPos() + vec_length * t_size > MAX_LENGTH) throw std::runtime_error("Buffer overflow");
         write(vec_length);
         for (const T &t : vec) {
             write(static_cast<base_type<T>>(t));
@@ -221,9 +221,9 @@ private:
         static_assert(std::is_fundamental<base_type<T>>::value, "Trying to create ByteData of non-fundamental type");
 
         ByteData(DataStream &stream) {
-            if (stream.pos + sizeof(T) > stream.length) throw std::runtime_error("Buffer overflow");
+            if (stream.getPos() + sizeof(T) > stream.getLength()) throw std::runtime_error("Buffer overflow");
             for (int i = 0; i < sizeof(T); ++i) {
-                bytes[stream.swapped ? (sizeof(T) - 1 - i) : i] = stream.buffer.get()->at(stream.pos + i);
+                bytes[stream.swapped ? (sizeof(T) - 1 - i) : i] = stream.buffer.get()->at(stream.getPos() + i);
             }
             stream.pos += sizeof(T);
         }
@@ -232,9 +232,9 @@ private:
         ByteData(DataStream &stream, U &&value) {
             if (stream.sealed) throw std::runtime_error("Trying to write bytes into a sealed stream.");
             this->value = value;
-            if (stream.pos + sizeof(U) > MAX_LENGTH) throw std::runtime_error("Buffer overflow");
+            if (stream.getPos() + sizeof(U) > MAX_LENGTH) throw std::runtime_error("Buffer overflow");
             for (int i = 0; i < sizeof(U); ++i) {
-                stream.buffer.get()->at(stream.pos + (stream.swapped ? (sizeof(U) - 1 - i) : i)) = bytes[i];
+                stream.buffer.get()->at(stream.getPos() + (stream.swapped ? (sizeof(U) - 1 - i) : i)) = bytes[i];
             }
             stream.pos += sizeof(U);
             stream.length = stream.pos;
