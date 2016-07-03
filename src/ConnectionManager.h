@@ -27,6 +27,7 @@
 #include <packet/server/RoleListPacket.h>
 #include <packet/server/PingPacket.h>
 #include <packet/server/SelectRoleConfirmationPacket.h>
+#include <packet/server/PrivateMessagePacket.h>
 
 class ConnectionManager {
 public:
@@ -56,41 +57,36 @@ public:
 
             if (bytes_received <= 0) return;
 
-            printf("Actual bytes received: %d\n", bytes_received);
-
             auto bytes_unpacked = connectionData.cipher.decrypt(dataStream, bufferPtr, bytes_received);
-
-            printf("After unpacking: %d\n", bytes_unpacked);
         } while (bytes_received == 1024); //TODO || bytes_received < 0 (?)
         dataStream.seal();
 
-        printf("Received data [%d] = ", (int) dataStream.getLength());
-        for (int i = 0; i < dataStream.getLength(); ++i) {
-            printf("%d ", (int) dataStream.getByteAt(i));
-        }
-        printf("\n");
+        if (dataStream.getByteAt(0) == 0) return;
+
+        printStream("Received data", dataStream);
 
         while (dataStream.getPos() < dataStream.getLength()) { //single stream may contain multiple packets
-            uni_int packetId = dataStream.read<uni_int>();
-            uni_int packetSize = dataStream.read<uni_int>();
-
-            if (packetId == 0) {
-                dataStream.setSwapped(false);
-                //TODO read container
+            try {
+                readPacket(dataStream);
+            } catch (const std::out_of_range &e) {
+                fprintf(stderr, "%s\n", e.what());
                 break;
-            } else {
-                printf("Handling packet [%d] [%d]\n", packetId, packetSize);
-                size_t previousPosition = dataStream.getPos();
-                try {
-                    auto p1 = PacketManager::getInstance().getFactory(PacketType::SERVER_DEFAULT, packetId)->createPacket(dataStream, this->connectionData);
-                    int readBytes = (int) (p1->getStream().getPos() - previousPosition);
-                    if (readBytes != packetSize) printf("Received packet [%d] contains unread data (%d)\n", packetId, packetSize - readBytes);
-                    if (packetSize - readBytes < 0) throw std::runtime_error("Packet read more bytes than expected");
-                    dataStream.skipBytes(packetSize - readBytes);
-                } catch (const std::out_of_range &e) {
-                    fprintf(stderr, "%s\n", e.what());
-                }
             }
+        }
+    }
+
+    void readPacket(DataStream &dataStream) {
+        uni_int packetId = dataStream.read<uni_int>();
+        uni_int packetSize = dataStream.read<uni_int>();
+
+        if (packetId > 0) {
+            printf("Handling packet id:[%d] size:[%d]\n", packetId, packetSize);
+            size_t previousPosition = dataStream.getPos();
+            auto p1 = PacketManager::getInstance().getFactory(PacketType::SERVER_DEFAULT, packetId)->createPacket(dataStream, this->connectionData);
+            int readBytes = (int) (p1->getStream().getPos() - previousPosition);
+            if (readBytes != packetSize) printf("Received packet [%d] contains unread data (%d)\n", packetId, packetSize - readBytes);
+            if (packetSize - readBytes < 0) throw std::runtime_error("Packet read more bytes than expected");
+            dataStream.skipBytes(packetSize - readBytes);
         }
     }
 
@@ -103,6 +99,9 @@ public:
         packet.prepareData();
         auto &firstChunkPtr = *packet.getStream().getData().begin();
         firstChunkPtr[1] = (byte) (packet.getStream().getLength() - 2);
+
+        printStream("Trying to send data", stream);
+
         auto &data = packet.getStream().getData();
         for (auto it = data.begin(); it != data.end(); ++it) {
             DataStream::DataChunk &chunk = *it;
@@ -114,11 +113,6 @@ public:
 
     void sendPacket(const Packet &packet) {
         if (!packet.getStream().isSealed()) throw std::runtime_error("Trying to send an unsealed packet");
-        printf("Tring to send data [%d] = ", packet.getStream().getLength());
-        for (int i = 0; i < packet.getStream().getLength(); ++i) {
-            printf("%d ", (int) packet.getStream().getByteAt(i));
-        }
-        printf("\n");
         auto &data = packet.getStream().getData();
         for (auto it = data.begin(); it != data.end(); ++it) {
             const DataStream::DataChunk &chunk = *it;
@@ -137,6 +131,14 @@ private:
     sockaddr_in serverAddress;
     int sock;
     bool connected = false;
+
+    void printStream(const std::string &message, DataStream &dataStream) {
+        printf("%s [%d] = ", message.c_str(), (int) dataStream.getLength());
+        for (int i = 0; i < dataStream.getLength(); ++i) {
+            printf("%d ", (int) dataStream.getByteAt(i));
+        }
+        printf("\n");
+    }
 };
 
 #endif //PWI_OOG_NETWORKMANAGER_H
