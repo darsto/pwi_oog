@@ -22,10 +22,21 @@ public:
             encoder.encode(packet[i]);
     }
 
-    void decrypt(byte *packet, ssize_t &bytes) {
-        if (!decoder.isShuffled()) return;
-        for (int i = 0; i < bytes; ++i) decoder.encode(packet[i]);
-        unpacker.Unpack(packet, bytes);
+    /*
+     * Decrypt chunkPtr and place it into stream
+     */
+    size_t decrypt(DataStream &stream, DataStream::DataChunk &chunkPtr, size_t bytes) {
+        if (decoder.isShuffled()) {
+            for (int i = 0; i < bytes; ++i) {
+                decoder.encode(chunkPtr[i]);
+            }
+            return unpacker.Unpack(stream, chunkPtr, bytes);
+        } else {
+            for (int i = 0; i < bytes; ++i) {
+                stream.write(chunkPtr[i]);
+            }
+            return bytes;
+        }
     }
 
 private:

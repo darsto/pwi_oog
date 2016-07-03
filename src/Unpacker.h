@@ -15,6 +15,8 @@ private:
     std::vector<byte> unpackedChunk;
 
 public:
+    Unpacker() : unpackedBytes(10500) {} //TODO doesn't work without this - there are probably some reallocation (deallocation) issues
+
     std::vector<byte> Unpack(byte packedByte) {
         packedBytes.push_back(packedByte);
 
@@ -156,18 +158,16 @@ public:
         return unpackedChunk;
     }
 
-    void Unpack(byte *compressedBytes, ssize_t &size) {
-        byte originalData[size];
-        std::copy(compressedBytes, compressedBytes + size, originalData);
-
-        int offset = 0;
+    size_t Unpack(DataStream &stream, const DataStream::DataChunk &compressedBytes, size_t size) {
+        size_t offset = 0;
         for (int i = 0; i < size; ++i) {
-            std::vector<byte> unpacked = Unpack(originalData[i]);
-            for (int j = 0; j < unpacked.size(); ++j, ++offset) {
-                compressedBytes[offset] = unpacked[j];
+            std::vector<byte> unpacked = Unpack(compressedBytes[i]);
+            for (int j = 0; j < unpacked.size(); ++j) {
+                stream.write(unpacked[j]);
             }
+            offset += unpacked.size();
         }
-        size = offset;
+        return offset;
     }
 
 private:
@@ -178,7 +178,7 @@ private:
             if (pIndex < 0)
                 return;
 
-            byte b = unpackedBytes[pIndex];
+            byte b = unpackedBytes.at(pIndex);
             unpackedBytes.push_back(b);
             unpackedChunk.push_back(b);
         }

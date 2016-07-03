@@ -9,7 +9,7 @@ uni_int::operator int32_t() {
 }
 
 void uni_int::read(DataStream &stream) {
-    byte firstByte = stream.getBuffer()->at(stream.getPos());
+    byte firstByte = stream.getByteAt(stream.getPos());
     switch (firstByte & 0xE0) {
         case 0xE0: {
             stream.skipBytes(1);

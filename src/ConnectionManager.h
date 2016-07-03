@@ -30,14 +30,9 @@
 
 class ConnectionManager {
 public:
-    static const int MAX_BYTES = 1024;
-    using data_type = std::shared_ptr<std::array<byte, MAX_BYTES>>;
-
     ConnectionManager(const std::string &hostAddress, uint16_t port)
         : hostAddress(hostAddress),
-          port(port),
-          receiveBuffer(std::make_shared<std::array<byte, MAX_BYTES>>()),
-          sendBuffer(std::make_shared<std::array<byte, MAX_BYTES>>()) {
+          port(port) {
         host = gethostbyname(hostAddress.c_str());
         sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -52,59 +47,85 @@ public:
         return connected;
     }
 
-
     void listen() {
-        ssize_t bytes_recieved = recv(sock, receiveBuffer.get(), MAX_BYTES, 0);
-        connectionData.cipher.decrypt(receiveBuffer.get()->data(), bytes_recieved);
-        if (bytes_recieved > 0) {
-            printf("Received data [%d] = ", (int) bytes_recieved - 2);
-            for (int i = 0; i < bytes_recieved; ++i) {
-                printf("%d ", (int) ((unsigned char) (*receiveBuffer.get())[i]));
-            }
-            printf("\n");
+        DataStream dataStream;
+        ssize_t bytes_received = 0;
+        do {
+            DataStream::DataChunk bufferPtr;
+            bytes_received = recv(sock, bufferPtr.data(), 1024, 0);
 
-            DataStream dataStream(receiveBuffer, bytes_recieved);
-            byte firstByte = receiveBuffer.get()->at(0);
+            if (bytes_received <= 0) return;
 
-            while (dataStream.getPos() < bytes_recieved) { //single stream may contain multiple packets
-                uni_int packetId = dataStream.read<uni_int>();
-                uni_int packetSize = dataStream.read<uni_int>();
+            printf("Actual bytes received: %d\n", bytes_received);
+
+            auto bytes_unpacked = connectionData.cipher.decrypt(dataStream, bufferPtr, bytes_received);
+
+            printf("After unpacking: %d\n", bytes_unpacked);
+        } while (bytes_received == 1024); //TODO || bytes_received < 0 (?)
+        dataStream.seal();
+
+        printf("Received data [%d] = ", (int) dataStream.getLength());
+        for (int i = 0; i < dataStream.getLength(); ++i) {
+            printf("%d ", (int) dataStream.getByteAt(i));
+        }
+        printf("\n");
+
+        while (dataStream.getPos() < dataStream.getLength()) { //single stream may contain multiple packets
+            uni_int packetId = dataStream.read<uni_int>();
+            uni_int packetSize = dataStream.read<uni_int>();
+
+            if (packetId == 0) {
+                dataStream.setSwapped(false);
+                //TODO read container
+                break;
+            } else {
                 printf("Handling packet [%d] [%d]\n", packetId, packetSize);
                 size_t previousPosition = dataStream.getPos();
                 try {
                     auto p1 = PacketManager::getInstance().getFactory(PacketType::SERVER_DEFAULT, packetId)->createPacket(dataStream, this->connectionData);
                     int readBytes = (int) (p1->getStream().getPos() - previousPosition);
                     if (readBytes != packetSize) printf("Received packet [%d] contains unread data (%d)\n", packetId, packetSize - readBytes);
+                    if (packetSize - readBytes < 0) throw std::runtime_error("Packet read more bytes than expected");
+                    dataStream.skipBytes(packetSize - readBytes);
                 } catch (const std::out_of_range &e) {
-                    printf("%s\n", e.what());
+                    fprintf(stderr, "%s\n", e.what());
                 }
-                dataStream.setPositionForward(previousPosition + packetSize);
             }
         }
     }
 
     template<class TPacket, typename... Args>
     void sendPacket(Args &&... args) {
-        DataStream stream(sendBuffer);
+        DataStream stream;
         stream.write((byte) TPacket::ID);
         stream.write((byte) 0);
         TPacket packet(stream, std::forward<Args>(args)...);
         packet.prepareData();
-        packet.getStream().getBuffer()->at(1) = (byte) (packet.getStream().getLength() - 2);
-        connectionData.cipher.encrypt(packet.getStream().getBuffer().get()->data(), packet.getStream().getLength());
+        auto &firstChunkPtr = *packet.getStream().getData().begin();
+        firstChunkPtr[1] = (byte) (packet.getStream().getLength() - 2);
+        auto &data = packet.getStream().getData();
+        for (auto it = data.begin(); it != data.end(); ++it) {
+            DataStream::DataChunk &chunk = *it;
+            connectionData.cipher.encrypt(chunk.data(), std::min(packet.getStream().getLength(), (size_t) DataStream::MAX_LENGTH));
+        }
         packet.getStream().seal();
         sendPacket(packet);
     }
 
     void sendPacket(const Packet &packet) {
         if (!packet.getStream().isSealed()) throw std::runtime_error("Trying to send an unsealed packet");
-        printf("Tring to send data [%d] = ", packet.getStream().getLength() - 2);
+        printf("Tring to send data [%d] = ", packet.getStream().getLength());
         for (int i = 0; i < packet.getStream().getLength(); ++i) {
-            printf("%d ", (int) ((unsigned char) (*packet.getStream().getBuffer().get())[i]));
+            printf("%d ", (int) packet.getStream().getByteAt(i));
         }
         printf("\n");
-        ssize_t bytes_sent = send(sock, (*packet.getStream().getBuffer().get()).data(), packet.getStream().getLength(), 0);
-        if (bytes_sent != packet.getStream().getLength()) printf("Sent packet with an unexpected size\n");
+        auto &data = packet.getStream().getData();
+        for (auto it = data.begin(); it != data.end(); ++it) {
+            const DataStream::DataChunk &chunk = *it;
+            ssize_t bytes_sent = send(sock, chunk.data(), std::min(packet.getStream().getLength(), (size_t) DataStream::MAX_LENGTH), 0);
+            if (bytes_sent < 0) fprintf(stderr, "Failed to send packet\n");
+            else if (bytes_sent != packet.getStream().getLength()) fprintf(stderr, "Sent packet with an unexpected size\n");
+        }
     }
 
     ConnectionData connectionData;
@@ -116,8 +137,6 @@ private:
     sockaddr_in serverAddress;
     int sock;
     bool connected = false;
-    data_type receiveBuffer;
-    data_type sendBuffer;
 };
 
 #endif //PWI_OOG_NETWORKMANAGER_H

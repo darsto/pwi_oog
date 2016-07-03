@@ -11,6 +11,7 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <list>
 
 using byte = unsigned char;
 
@@ -28,6 +29,11 @@ struct uni_int { //universal int, takes 1, 2, 4 or 5 bytes
  * A wrapper class for serialized data.
  */
 class DataStream {
+public:
+    static const int MAX_LENGTH = 1024;
+    using DataChunk = std::array<byte, MAX_LENGTH>;
+
+private:
     template<typename T>
     using base_type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
@@ -70,20 +76,18 @@ class DataStream {
         static constexpr bool value = type::value;
     };
 
-public:
-    DataStream(std::shared_ptr<std::array<byte, 1024>> &buffer, size_t length)
-        : buffer(buffer),
-          length(length),
-          pos(0),
-          sealed(true),
-          swapped(true) {}
+    using Data = std::list<DataChunk>;
 
-    DataStream(std::shared_ptr<std::array<byte, 1024>> &buffer)
-        : buffer(buffer),
-          length(0),
+public:
+    DataStream()
+        : length(0),
+          offset(0),
           pos(0),
           sealed(false),
-          swapped(true) {}
+          swapped(true) {
+        data.push_back(DataChunk());
+        current = data.begin();
+    }
 
     template<typename T>
     typename std::enable_if_t<std::is_fundamental<std::decay_t<T>>::value>
@@ -148,26 +152,38 @@ public:
 
     template<typename T>
     void write(std::vector<T> &vec) {
-        //this is just an optimization. If T is a non-fundamental, sizeof(T) might contain extra padding bytes of T, which are not written into the stream
-        int t_size = std::is_fundamental<std::decay_t<T>>::value ? sizeof(T) : 1;
         uni_int vec_length = {(int32_t) vec.size()};
-        if (this->getPos() + vec_length * t_size > MAX_LENGTH) throw std::runtime_error("Buffer overflow");
         write(vec_length);
         for (const T &t : vec) {
             write(static_cast<base_type<T>>(t));
         }
     }
 
+    const byte getByteAt(u_long index) const {
+        if (index >= getLength()) throw std::out_of_range("Trying to read a byte at index > length");
+        Data::const_iterator it = data.begin();
+        while (index > MAX_LENGTH) {
+            ++it;
+            index -= MAX_LENGTH;
+        }
+        const DataChunk &chunkPtr = *it;
+        return chunkPtr[index];
+    }
+
+    const Data &getData() const {
+        return data;
+    }
+
+    Data &getData() {
+        return data;
+    }
+
     size_t getLength() const {
         return length;
     }
 
-    size_t getPos() const {
+    u_long getPos() const {
         return pos;
-    }
-
-    const std::shared_ptr<std::array<byte, 1024>> getBuffer() const {
-        return buffer;
     }
 
     bool isSealed() const {
@@ -175,7 +191,9 @@ public:
     }
 
     void seal() {
-        this->sealed = true;
+        sealed = true;
+        current = data.begin();
+        pos = 0;
     }
 
     bool isSwapped() const {
@@ -187,28 +205,48 @@ public:
     }
 
     void skipBytes(size_t n) {
-        pos += n;
-        if (!sealed) length = pos;
+        incrementPos(n);
     }
-
-    void setPositionForward(size_t i) {
-        if (i < pos) throw std::runtime_error("Trying to set invalid buffer position.");
-        pos = i;
-        if (!sealed) length = pos;
-    }
-
-    static const int MAX_LENGTH = 1024;
 
 private:
-    std::shared_ptr<std::array<byte, 1024>> buffer;
+    Data data;
+    Data::iterator current;
     size_t length;
-    size_t pos;
+    u_long pos;
+    u_long offset;
+
     bool sealed; //when true, the stream is read-only
 
     /*when true, all primitives are construced from read bytes in reverse order
      * [1 1 0 0] -> (swapped == 1) (int) 257
      * true by default */
     bool swapped;
+
+    byte &getNextByte() {
+        auto prev_pos = pos - offset;
+        DataChunk &chunkPtr = *current;
+        incrementPos();
+        return chunkPtr[prev_pos];
+    }
+
+    void incrementPos(u_long n = 1) {
+        if (sealed && pos + n > length) throw std::out_of_range("pos + n > length");
+        pos += n;
+        if (!sealed) length = pos;
+        while (pos - offset >= MAX_LENGTH) {
+            offset += MAX_LENGTH;
+            ++current;
+            if (!sealed && current == data.end()) {
+                appendChunk();
+                --current;
+            }
+        }
+    }
+
+    void appendChunk() {
+        if (sealed) throw std::runtime_error("Trying to..."); //todo
+        data.push_back(DataChunk());
+    }
 
     /*
      * A wrapper class for primitives (de)serialization
@@ -223,21 +261,17 @@ private:
         ByteData(DataStream &stream) {
             if (stream.getPos() + sizeof(T) > stream.getLength()) throw std::runtime_error("Buffer overflow");
             for (int i = 0; i < sizeof(T); ++i) {
-                bytes[stream.swapped ? (sizeof(T) - 1 - i) : i] = stream.buffer.get()->at(stream.getPos() + i);
+                bytes[stream.isSwapped() ? (sizeof(T) - 1 - i) : i] = stream.getNextByte();
             }
-            stream.pos += sizeof(T);
         }
 
         template<typename U = T>
         ByteData(DataStream &stream, U &&value) {
-            if (stream.sealed) throw std::runtime_error("Trying to write bytes into a sealed stream.");
+            if (stream.isSealed()) throw std::runtime_error("Trying to write bytes into a sealed stream.");
             this->value = value;
-            if (stream.getPos() + sizeof(U) > MAX_LENGTH) throw std::runtime_error("Buffer overflow");
             for (int i = 0; i < sizeof(U); ++i) {
-                stream.buffer.get()->at(stream.getPos() + (stream.swapped ? (sizeof(U) - 1 - i) : i)) = bytes[i];
+                stream.getNextByte() = bytes[stream.isSwapped() ? (sizeof(U) - 1 - i) : i];
             }
-            stream.pos += sizeof(U);
-            stream.length = stream.pos;
         }
     };
 };
