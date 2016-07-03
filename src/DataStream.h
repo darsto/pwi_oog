@@ -161,7 +161,7 @@ public:
 
     const byte getByteAt(u_long index) const {
         if (index >= getLength()) throw std::out_of_range("Trying to read a byte at index > length");
-        Data::const_iterator it = data.begin();
+        Data::const_iterator it = data.cbegin();
         while (index > MAX_LENGTH) {
             ++it;
             index -= MAX_LENGTH;
