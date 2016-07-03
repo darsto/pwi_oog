@@ -62,6 +62,7 @@ struct RoleInfo {
     float posX;
     float posZ;
     float posY;
+    //[50 bytes]
 
     void read(DataStream &stream) {
         stream.read(UID);
@@ -81,6 +82,8 @@ struct RoleInfo {
         stream.read(posX);
         stream.read(posZ);
         stream.read(posY);
+
+        stream.skipBytes(50);
     }
 
     void write(DataStream &stream) {
@@ -101,6 +104,8 @@ struct RoleInfo {
         stream.write(posX);
         stream.write(posZ);
         stream.write(posY);
+
+        stream.skipBytes(50);
     }
 };
 

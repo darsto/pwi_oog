@@ -26,7 +26,6 @@ public:
     //[4 bytes]
     bool isChar;
     RoleInfo roleInfo;
-    //more unknown content of unknown length (!)
 };
 
 #endif //PWI_OOG_ROLELISTPACKET_H
