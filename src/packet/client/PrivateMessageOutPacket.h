@@ -24,20 +24,24 @@ public:
         stream.write(connectionData.selectedRole.UID);
         stream.write(recipient);
         stream.write(recipientUID);
-        stream.write(message);
-        stream.write(unknown1);
-        stream.write(unknown2);
+
+        std::vector<char> message_encoded(message.length() * 2);
+        for (int i = 0; i < message.length(); ++i) {
+            message_encoded[i * 2] = message[i];
+        }
+
+        stream.write(message_encoded);
+        stream.skipBytes(5);
     }
 
-    byte type;
-    byte emotion;
+    byte type = 0;
+    byte emotion = 0;
     //std::string sender;
     //unsigned int senderUID;
     const std::string &recipient;
-    unsigned int recipientUID;
+    unsigned int recipientUID = 0;
     const std::string &message;
-    byte unknown1;
-    byte unknown2;
+    //[5 bytes]
 };
 
 #endif //PWI_OOG_PRIVATEMESSAGEOUTPACKET_H
