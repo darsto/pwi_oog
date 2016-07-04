@@ -145,9 +145,20 @@ public:
         t.write(*this);
     }
 
-    void write(std::string &str) {
+    template <typename T>
+    typename std::enable_if_t<std::is_same<std::decay_t<T>, std::string>::value>
+    write(T &&str) {
         std::vector<byte> data(str.begin(), str.end());
         write(data);
+    }
+
+    template<typename T>
+    void write(const std::vector<T> &vec) {
+        uni_int vec_length = {(int32_t) vec.size()};
+        write(vec_length);
+        for (const T &t : vec) {
+            write(static_cast<base_type<T>>(t));
+        }
     }
 
     template<typename T>
