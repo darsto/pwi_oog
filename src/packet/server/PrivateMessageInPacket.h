@@ -19,6 +19,7 @@ public:
         stream.read(name);
         stream.read(UID);
         stream.read(msg);
+        stream.skipBytes(5);
     }
 
     byte messageType;
@@ -28,6 +29,7 @@ public:
     std::string name;
     unsigned int UID;
     std::string msg;
+    // [5 bytes]
 };
 
 #endif //PWI_OOG_PRIVATEMESSAGEPACKET_H
