@@ -34,9 +34,6 @@ public:
     using DataChunk = std::array<byte, MAX_LENGTH>;
 
 private:
-    template<typename T>
-    using base_type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
-
     template<uint N, typename T>
     struct has_bytes {
         static constexpr bool value = sizeof(T) >= N;
@@ -157,7 +154,7 @@ public:
         uni_int vec_length = {(int32_t) vec.size()};
         write(vec_length);
         for (const T &t : vec) {
-            write(static_cast<base_type<T>>(t));
+            write(static_cast<T>(t));
         }
     }
 
@@ -166,7 +163,7 @@ public:
         uni_int vec_length = {(int32_t) vec.size()};
         write(vec_length);
         for (const T &t : vec) {
-            write(static_cast<base_type<T>>(t));
+            write(static_cast<T>(t));
         }
     }
 
@@ -264,10 +261,10 @@ private:
      */
     template<typename T>
     union ByteData {
-        base_type<T> value;
+        std::decay_t<T> value;
         byte bytes[sizeof(T)];
 
-        static_assert(std::is_fundamental<base_type<T>>::value, "Trying to create ByteData of non-fundamental type");
+        static_assert(std::is_fundamental<std::decay_t<T>>::value, "Trying to create ByteData of non-fundamental type");
 
         ByteData(DataStream &stream) {
             if (stream.getPos() + sizeof(T) > stream.getLength()) throw std::runtime_error("Buffer overflow");
