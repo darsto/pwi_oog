@@ -8,7 +8,7 @@
 #include <packet/Packet.h>
 #include <packet/ServerPacketFactory.h>
 
-SERVER_PACKET(96, PrivateMessagePacket)
+SERVER_PACKET(96, PrivateMessageInPacket)
 
 public:
     virtual void prepareData() override {

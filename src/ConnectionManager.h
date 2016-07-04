@@ -27,7 +27,7 @@
 #include <packet/server/RoleListPacket.h>
 #include <packet/server/PingPacket.h>
 #include <packet/server/SelectRoleConfirmationPacket.h>
-#include <packet/server/PrivateMessagePacket.h>
+#include <packet/server/PrivateMessageInPacket.h>
 
 class ConnectionManager {
 public:
