@@ -20,6 +20,7 @@ class DataStream;
 struct uni_int { //universal int, takes 1, 2, 4 or 5 bytes
     int32_t value;
 
+    uni_int();
     uni_int(int32_t value);
     operator int32_t();
     void read(DataStream &stream);
