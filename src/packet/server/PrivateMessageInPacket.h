@@ -24,11 +24,11 @@ public:
 
     byte messageType;
     // [1 byte]
-    std::string sender;
+    NString sender;
     unsigned int senderUID;
-    std::string name;
+    NString name;
     unsigned int UID;
-    std::string msg;
+    NString msg;
     // [5 bytes]
 };
 

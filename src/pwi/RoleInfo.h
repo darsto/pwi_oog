@@ -6,6 +6,7 @@
 #define PWI_OOG_ROLEINFO_H
 
 #include <DataStream.h>
+#include <NString.h>
 
 struct EquipInfo {
     int id;
@@ -52,7 +53,7 @@ struct RoleInfo {
     byte race;
     byte occupationId;
     int level;
-    std::string name;
+    NString name;
     std::vector<byte> face;
     std::vector<EquipInfo> equipInfo;
     bool activate;

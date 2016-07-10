@@ -6,6 +6,7 @@
 #define PWI_OOG_PRIVATEMESSAGEOUTPACKET_H
 
 #include <packet/Packet.h>
+#include <NString.h>
 
 class PrivateMessageOutPacket : public Packet {
 public:
@@ -24,23 +25,17 @@ public:
         stream.write(connectionData.selectedRole.UID);
         stream.write(recipient);
         stream.write(recipientUID);
-
-        std::vector<char> message_encoded(message.length() * 2);
-        for (int i = 0; i < message.length(); ++i) {
-            message_encoded[i * 2] = message[i];
-        }
-
-        stream.write(message_encoded);
+        stream.write(message);
         stream.skipBytes(5);
     }
 
-    byte type = 0;
+    byte type = 174;
     byte emotion = 0;
     //std::string sender;
     //unsigned int senderUID;
-    const std::string &recipient;
+    NString recipient;
     unsigned int recipientUID = 0;
-    const std::string &message;
+    NString message;
     //[5 bytes]
 };
 
