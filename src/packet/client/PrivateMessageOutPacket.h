@@ -20,7 +20,7 @@ public:
 
     virtual void prepareData() override {
         stream.write(type);
-        stream.write(emotion);
+        stream.skipBytes(1);
         stream.write(connectionData.selectedRole.name);
         stream.write(connectionData.selectedRole.UID);
         stream.write(recipient);
@@ -30,7 +30,7 @@ public:
     }
 
     byte type = 174;
-    byte emotion = 0;
+    //[1 byte]
     //std::string sender;
     //unsigned int senderUID;
     NString recipient;

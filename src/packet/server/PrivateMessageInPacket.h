@@ -16,8 +16,8 @@ public:
         stream.skipBytes(1);
         stream.read(sender);
         stream.read(senderUID);
-        stream.read(name);
-        stream.read(UID);
+        stream.read(recipient);
+        stream.read(recipientUID);
         stream.read(msg);
         stream.skipBytes(5);
     }
@@ -26,8 +26,8 @@ public:
     // [1 byte]
     NString sender;
     unsigned int senderUID;
-    NString name;
-    unsigned int UID;
+    NString recipient;
+    unsigned int recipientUID;
     NString msg;
     // [5 bytes]
 };
