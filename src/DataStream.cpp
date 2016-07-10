@@ -4,6 +4,8 @@
 
 #include "DataStream.h"
 
+uni_int::uni_int(int32_t value) : value(value) {}
+
 uni_int::operator int32_t() {
     return value;
 }
