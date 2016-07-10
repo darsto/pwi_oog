@@ -30,7 +30,7 @@ struct ServerPacketFactory : ServerPacketBaseFactory {
     using ServerPacketBaseFactory::ServerPacketBaseFactory;
 
     std::unique_ptr<Packet> createPacket(DataStream &stream, ConnectionData &data) override {
-        auto packet = std::make_unique<TPacket>(stream, data);
+        std::unique_ptr<Packet> packet = std::make_unique<TPacket>(stream, data);
         packet->prepareData();
         if (handler) handler(*packet.get());
         return packet;
